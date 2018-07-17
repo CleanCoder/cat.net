@@ -53,7 +53,7 @@ namespace Org.Unidal.Cat.Configuration
 
                 if (root != null)
                 {
-                    this.MaxQueueSize = GetMaxQueueSize(root);
+                    this.MaxQueueSize = DEFAULT_MAX_QUEUE_SIZE;
                     this.MaxQueueByteSize = GetMaxQueueByteSize(root);
                     this.Domain = BuildDomain(root.GetElementsByTagName("domain"));
                     bool logEnable = BuildLogEnabled(root.GetElementsByTagName("logEnabled"));
@@ -73,10 +73,24 @@ namespace Org.Unidal.Cat.Configuration
             }
             else
             {
-                Logger.Warn("Config file({0}) not found, using localhost:2280 instead.", configFile);
-                Domain = BuildDomain(null);
-                Servers.Add(new Server("localhost", 2280));
+                var catConfig = Configuration.CatConfigurationSection.CatConfig;
+                this.Domain = new Domain() { Id = catConfig.Domain.Id.Trim(), Enabled = catConfig.Domain.Enabled, MaxMessageSize = catConfig.Domain.MaxMessageSize };
+                bool logEnable = catConfig.LogEnabled.Enabled;
+                Logger.Initialize(this.Domain.Id, logEnable);
+
+                IEnumerable<Server> servers = catConfig.Servers.OfType<Configuration.ServerElement>().Where(s => s.Enabled)
+                                                       .Select(s => new Server(s.Ip, s.Port, s.HttpPort) { Enabled = s.Enabled });
+                //NOTE: 只添加Enabled的
+                Servers = new List<Server>();
+                foreach (Server server in servers)
+                {
+                    Servers.Add(server);
+                    Logger.Info("CAT server configured: {0}:{1}", server.Ip, server.Port);
+                }
             }
+
+            Cat.Enabled = this.Domain != null && !string.IsNullOrEmpty(this.Domain.Id) && this.Domain.Enabled;
+            Logger.Info("CAT server turned on: " + Cat.Enabled);
         }
 
         private int GetMaxQueueSize(XmlElement element)

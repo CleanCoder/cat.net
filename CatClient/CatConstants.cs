@@ -52,5 +52,21 @@ namespace Org.Unidal.Cat
         public const String LOG_ENABLE = "LogEnabled";
         public const String CAT_HOME = @"D:\data\applogs";
         public const String CAT_HOME_TEMP = @"D:\data\applogs\cat";
+
+        /**
+        * Sql Event
+       */
+        public const string EVENT_SQL = "SQL";
+        public const string EVENT_SQL_DATABASE = EVENT_SQL + ".Database";
+        public const string EVENT_SQL_ROWS = EVENT_SQL + ".Rows";
+        public const string EVENT_SQL_METHOD = EVENT_SQL + ".Method";
+
+        /**
+         * Redis Event
+        */
+        public const string EVENT_REDIS = "Redis";
+        public const string EVENT_REDIS_SPEED = EVENT_REDIS + ".Speed";
+        public const string EVENT_REDIS_SLOW = EVENT_REDIS + ".Slow";
+        public const string EVENT_REDIS_LONG_KEY = EVENT_REDIS + ".LongKey";
     }
 }

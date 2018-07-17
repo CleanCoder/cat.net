@@ -33,6 +33,8 @@ namespace Org.Unidal.Cat
             Initialize();
         }
 
+        public static bool Enabled { get; internal set; } = false;
+
         private static void CheckAndInitialize() {
             if (!Instance._mInitialized) 
             {
