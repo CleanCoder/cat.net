@@ -71,6 +71,7 @@
     <Compile Include="Message\Internals\NullMetric.cs" />
     <Compile Include="Message\ITaggedTransaction.cs" />
     <Compile Include="Message\Spi\Internals\NullMessageProducer.cs" />
+    <Compile Include="Util\ThreadSafeStack.cs" />
     <Compile Include="Message\Spi\PerformanceMetricProvider\DefaultPerformanceMetricProvider.cs" />
     <Compile Include="Message\Spi\PerformanceMetricProvider\IPerformanceMetricProvider.cs" />
     <Compile Include="Util\BlockingThreadSafeQueue.cs" />

@@ -37,7 +37,7 @@ namespace Org.Unidal.Cat.Configuration
 
     public class DomainElement : ConfigurationElement
     {
-        [ConfigurationProperty("id", DefaultValue = "", IsRequired = true)]
+        [ConfigurationProperty("id", DefaultValue = "Unknown", IsRequired = true)]
         public string Id
         {
             get { return (string)this["id"]; }

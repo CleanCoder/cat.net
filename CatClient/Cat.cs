@@ -98,12 +98,7 @@ namespace Org.Unidal.Cat
                 DefaultMessageManager manager = new DefaultMessageManager();
 
                 var configFilePath = System.Configuration.ConfigurationManager.AppSettings[CatConstants.LOCAL_CLIENT_CONFIG];
-                AbstractClientConfig config;
-                if (String.IsNullOrWhiteSpace(configFilePath))
-                {
-                    configFilePath = @"D:\data\appdatas\cat\client.xml";
-                }
-                config = new LocalClientConfig(configFilePath);
+                AbstractClientConfig config = new LocalClientConfig(configFilePath);
 
                 manager.Initialize(config);
                 Instance._mProducer = new DefaultMessageProducer(manager);
@@ -127,7 +122,10 @@ namespace Org.Unidal.Cat
         public static ITransaction NewTransaction(string type, string name)
         {
             try {
-                return Cat.GetProducer().NewTransaction(type, name); 
+                var trans = Cat.GetProducer().NewTransaction(type, name);
+                trans.Standalone = Cat.GetManager().PeekTransaction() != null;
+
+                return trans;
             }
             catch (Exception ex) { Cat.lastException = ex; return new NullTransaction(); }
         }

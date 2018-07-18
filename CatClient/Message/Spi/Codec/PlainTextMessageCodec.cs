@@ -346,6 +346,9 @@ namespace Org.Unidal.Cat.Message.Spi.Codec
 
         public int EncodeMessage(IMessage message, ChannelBuffer buf)
         {
+            if (message == null)
+                return 0;
+
             if (message is IEvent)
             {
                 return EncodeLine(message, buf, 'E', Policy.DEFAULT);
@@ -353,7 +356,7 @@ namespace Org.Unidal.Cat.Message.Spi.Codec
             var transaction = message as ITransaction;
             if (transaction != null)
             {
-                IList<IMessage> children = transaction.Children;
+                IList<IMessage> children = new List<IMessage>(transaction.Children);
 
                 if ((children.Count == 0))
                 {

@@ -10,7 +10,7 @@ namespace Org.Unidal.Cat.Message.Internals
     {
         // private readonly Action<ITransaction> _endCallBack;
         private readonly IMessageManager _mManager;
-        private IList<IMessage> _mChildren;
+        private IList<IMessage> _mChildren = new List<IMessage>();
         private long _mDurationInMicro; // must be less than 0
 
         public DefaultTransaction(String type, String name, IMessageManager manager /*Action<ITransaction> endCallBack*/)
@@ -26,7 +26,7 @@ namespace Org.Unidal.Cat.Message.Internals
 
         public IList<IMessage> Children
         {
-            get { return _mChildren ?? (_mChildren = new List<IMessage>()); }
+            get { return _mChildren; }
         }
 
         public long DurationInMicros
@@ -89,20 +89,18 @@ namespace Org.Unidal.Cat.Message.Internals
 
         public ITransaction AddChild(IMessage message)
         {
-            try
+            lock (_mChildren)
             {
-                if (_mChildren == null)
+                try
                 {
-                    _mChildren = new List<IMessage>();
+                    _mChildren.Add(message);
+                    return this;
                 }
-
-                _mChildren.Add(message);
-                return this;
-            }
-            catch (Exception ex)
-            {
-                Cat.lastException = ex;
-                return this;
+                catch (Exception ex)
+                {
+                    Cat.lastException = ex;
+                    return this;
+                }
             }
         }
 
@@ -169,7 +167,7 @@ namespace Org.Unidal.Cat.Message.Internals
 
         public bool HasChildren()
         {
-            return _mChildren != null && _mChildren.Count > 0;
+            return _mChildren.Count > 0;
         }
         #endregion
     }

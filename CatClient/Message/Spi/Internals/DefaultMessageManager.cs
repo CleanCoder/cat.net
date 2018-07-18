@@ -6,6 +6,7 @@ using Org.Unidal.Cat.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using System.Linq;
 
 namespace Org.Unidal.Cat.Message.Spi.Internals
 {
@@ -191,7 +192,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
         {
             Context ctx = GetContext();
 
-            if (ctx != null && transaction.Standalone)
+            if (ctx != null && (transaction.Standalone || transaction is DefaultTransaction))
             {
                 if (ctx.End(transaction))
                 {
@@ -288,7 +289,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
         {
             private readonly IMessageTree _mTree;
 
-            private readonly Stack<ITransaction> _mStack;
+            private readonly ThreadSafeStack<ITransaction> _mStack;
 
             public int _mLength;
 
@@ -303,7 +304,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                 _mManager = manager;
 
                 _mTree = new DefaultMessageTree();
-                _mStack = new Stack<ITransaction>();
+                _mStack = new ThreadSafeStack<ITransaction>();
 
                 Thread thread = Thread.CurrentThread;
                 String groupName = Thread.GetDomain().FriendlyName;
@@ -326,7 +327,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                 get { return _mTree; }
             }
 
-            public Stack<ITransaction> Stack
+            public ThreadSafeStack<ITransaction> Stack
             {
                 get { return _mStack; }
             }
@@ -355,6 +356,8 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                 else
                 {
                     ITransaction parent = _mStack.Peek();
+                    if (parent == null)
+                        throw new Exception("dddd");
 
                     AddTransactionChild(message, parent);
                 }
@@ -395,41 +398,49 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
             ///<returns> true if message is flushed, false otherwise </returns>
             public bool End(ITransaction transaction)
             {
-                if (_mStack.Count != 0)
+                lock (_mStack.SyncRoot)
                 {
-                    ITransaction current = _mStack.Pop();
+                    if (_mStack.Count != 0)
+                    {
+                        ITransaction current = _mStack.Peek();
 
-                    if (transaction == current)
-                    {
-                        _mManager._mValidator.Validate(_mStack.Count == 0 ? null : _mStack.Peek(), current);
-                    }
-                    else
-                    {
-                        while (transaction != current && _mStack.Count != 0)
+                        if (transaction == current)
                         {
-                            _mManager._mValidator.Validate(_mStack.Peek(), current);
-
-                            current = _mStack.Pop();
+                            _mStack.Pop();
+                            _mManager._mValidator.Validate(_mStack.Count == 0 ? null : _mStack.Peek(), current);
                         }
-                    }
-
-                    if (_mStack.Count == 0)
-                    {
-                        IMessageTree tree = _mTree.Copy();
-                        _mTree.MessageId = null;
-                        _mTree.Message = null;
-                        _mTree.EstimatedByteSize = 0;
-                        
-                        if (_mTotalDurationInMicros > 0)
+                        else
                         {
-                            AdjustForTruncatedTransaction((ITransaction)tree.Message);
+                            if (_mStack.FirstOrDefault(item => item == transaction) != null)
+                            {
+                                current = _mStack.Pop();
+                                while (transaction != current && _mStack.Count != 0)
+                                {
+                                    _mManager._mValidator.Validate(_mStack.Peek(), current);
+
+                                    current = _mStack.Pop();
+                                }
+                            }
                         }
 
-                        _mManager.Flush(tree);
-                        return true;
+                        if (_mStack.Count == 0)
+                        {
+                            IMessageTree tree = _mTree.Copy();
+                            _mTree.MessageId = null;
+                            _mTree.Message = null;
+                            _mTree.EstimatedByteSize = 0;
+
+                            if (_mTotalDurationInMicros > 0)
+                            {
+                                AdjustForTruncatedTransaction((ITransaction)tree.Message);
+                            }
+
+                            _mManager.Flush(tree);
+                            return true;
+                        }
                     }
+                    return false;
                 }
-                return false;
             }
 
             /// <summary>
@@ -492,6 +503,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
 
                 if (!forked)
                 {
+
                     Tree.EstimatedByteSize += transaction.EstimateByteSize();
                     _mStack.Push(transaction);
                 }
@@ -561,7 +573,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                 transaction.SetCompleted(true);
             }
 
-            private void MigrateMessage(Stack<ITransaction> stack, ITransaction source, ITransaction target, int level)
+            private void MigrateMessage(ThreadSafeStack<ITransaction> stack, ITransaction source, ITransaction target, int level)
             {
                 // Note that stack.ToArray() gives an array reversed, which is the opposite of Java.
                 ITransaction[] onStackTransactions = stack.ToArray();
@@ -589,7 +601,10 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                     }
                 }
 
-                source.Children.Clear();
+                lock (source.Children)
+                {
+                    source.Children.Clear();
+                }
 
                 if (shouldKeep)
                 {
@@ -600,7 +615,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
             public void TruncateAndFlush(Context ctx, long timestamp)
             {
                 IMessageTree tree = ctx.Tree;
-                Stack<ITransaction> stack = ctx.Stack;
+                ThreadSafeStack<ITransaction> stack = ctx.Stack;
                 IMessage message = tree.Message;
 
                 if (message is DefaultTransaction)

@@ -365,7 +365,7 @@ namespace Org.Unidal.Cat.Message.Spi.IO
 
                 byte[] data = buf.ToArray();
 
-                _mActiveChannel.Client.Send(data);
+                var sendCount = _mActiveChannel.Client.Send(data);
 
                 if (_mStatistics != null)
                 {
