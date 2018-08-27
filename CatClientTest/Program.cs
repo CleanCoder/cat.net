@@ -46,13 +46,13 @@ namespace CatClientTest
 
             try
             {
-                newOrderTransaction = Cat.NewTransaction("SimpleTestAsync-4-" + DateTime.Now.Ticks, "NewTrainOrder");
+                newOrderTransaction = Cat.NewTransaction("SimpleTestAsync-3-" + DateTime.Now.Ticks, "NewTrainOrder");
                 newOrderTransaction.AddData("I am a detailed message");
                 newOrderTransaction.AddData("another message"); 
                 //Cat.LogEvent("TrainNo", "123456");
                 //Cat.LogError("MyException", new Exception("My Exception"));
 
-                var tasks = Enumerable.Range(1, 2).Select(async (i) => await InvokePaymentWrap(i));
+                var tasks = Enumerable.Range(1, 20).Select(async (i) => await InvokePaymentWrap(i));
 
                 await Task.WhenAll(tasks);
 
@@ -74,9 +74,6 @@ namespace CatClientTest
 
         private static async Task InvokePaymentWrap(int i)
         {
-            await InvokePayment(i);
-
-            return;
             var forkedTran = Cat.NewForkedTransaction("remote", "InvokePaymentWrap");
             try
             {
@@ -105,7 +102,7 @@ namespace CatClientTest
                 await Task.Delay(100);
                 Console.WriteLine($"InvokePayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
 
-                await InvokeInnerPayment();
+                await InvokeInnerPayment(i);
             }
             catch (Exception ex)
             {
@@ -117,13 +114,13 @@ namespace CatClientTest
             }
         }
 
-        private static async Task InvokeInnerPayment()
+        private static async Task InvokeInnerPayment(int i)
         {
             ITransaction paymentTransaction = null;
             try
             {
                 Console.WriteLine($"InnerPayment 1 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
-                paymentTransaction = Cat.NewTransaction("NewInnerPayment", "PaymentDetail");
+                paymentTransaction = Cat.NewTransaction("NewInnerPayment", "PaymentDetail-" + i);
                 paymentTransaction.Status = CatConstants.SUCCESS;
                 await Task.Delay(1000);
                 Console.WriteLine($"InnerPayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");

@@ -10,6 +10,9 @@ namespace Org.Unidal.Cat
     {
         public static async Task<TResult> WrapWithForkedTransactionAsync<TResult>(string funcName, Func<Task<TResult>> func)
         {
+            if (!Cat.Enabled)
+                return await func.Invoke();
+
             var forkedTran = Org.Unidal.Cat.Cat.NewForkedTransaction("remote", funcName);
             try
             {
@@ -32,6 +35,12 @@ namespace Org.Unidal.Cat
 
         public static async Task WrapWithForkedTransactionAsync(string funcName, Func<Task> func)
         {
+            if (!Cat.Enabled)
+            {
+                await func.Invoke();
+                return;
+            }
+
             var forkedTran = Org.Unidal.Cat.Cat.NewForkedTransaction("remote", funcName);
             try
             {
