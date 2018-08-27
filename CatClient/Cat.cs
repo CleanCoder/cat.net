@@ -159,7 +159,11 @@ namespace Org.Unidal.Cat
 
         public static IForkedTransaction NewForkedTransaction(String type, String name)
         {
-            try { return Cat.GetProducer().NewForkedTransaction(type, name); }
+            try {
+                var forkTran = Cat.GetProducer().NewForkedTransaction(type, name);
+                forkTran.Fork();
+                return forkTran;
+            }
             catch (Exception ex) { Cat.lastException = ex; return new NullTransaction(); }
         }
 

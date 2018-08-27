@@ -64,6 +64,13 @@ namespace Org.Unidal.Cat.Configuration
             get { return (int)this["max_message_size"]; }
             set { this["max_message_size"] = value; }
         }
+
+        [ConfigurationProperty("client_load_balance", DefaultValue = "false", IsRequired = false)]
+        public bool UseClientLoadBalance
+        {
+            get { return (bool)this["client_load_balance"]; }
+            set { this["client_load_balance"] = value; }
+        }
     }
 
     public class LogElement : ConfigurationElement

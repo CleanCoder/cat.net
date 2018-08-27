@@ -75,6 +75,7 @@ namespace Org.Unidal.Cat.Configuration
             {
                 var catConfig = Configuration.CatConfigurationSection.CatConfig;
                 this.Domain = new Domain() { Id = catConfig.Domain.Id.Trim(), Enabled = catConfig.Domain.Enabled, MaxMessageSize = catConfig.Domain.MaxMessageSize };
+                this.UseClientLoadBalace = catConfig.Domain.UseClientLoadBalance;
                 bool logEnable = catConfig.LogEnabled.Enabled;
                 Logger.Initialize(this.Domain.Id, logEnable);
 

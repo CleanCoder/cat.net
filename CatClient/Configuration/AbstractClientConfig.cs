@@ -5,6 +5,8 @@ using System.Net;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Security.Cryptography;
+using System.Linq;
 
 namespace Org.Unidal.Cat.Configuration
 {
@@ -13,9 +15,10 @@ namespace Org.Unidal.Cat.Configuration
         private IList<Server> _mServers = new List<Server>();
         private Domain _mDomain;
         protected const int DEFAULT_MAX_QUEUE_SIZE = 1000;
-        protected const int DEFAULT_MAX_QUEUE_BYTE_SIZE = 256*1024*1024;
+        protected const int DEFAULT_MAX_QUEUE_BYTE_SIZE = 256 * 1024 * 1024;
         private int _mMaxQueueSize = DEFAULT_MAX_QUEUE_SIZE;
         private int _mMaxQueueByteSize = DEFAULT_MAX_QUEUE_BYTE_SIZE;
+        private static Lazy<RNGCryptoServiceProvider> rnd = new Lazy<RNGCryptoServiceProvider>(() => new RNGCryptoServiceProvider());
 
         /// <summary>
         ///   是否是开发模式
@@ -48,6 +51,11 @@ namespace Org.Unidal.Cat.Configuration
             get { return _mMaxQueueByteSize; }
             set { _mMaxQueueByteSize = value; }
         }
+
+        /// <summary>
+        /// 是否采用客户端随机方式实现负载均衡；开启后，会对服务端获取的服务器列表进行随机打乱
+        /// </summary>
+        public bool UseClientLoadBalace { get; set; } = false;
 
         public void Refresh()
         {
@@ -105,6 +113,11 @@ namespace Org.Unidal.Cat.Configuration
                     Server server = new Server(addressAndPort[0], port, httpPort);
                     servers.Add(server);
                 }
+
+                if (UseClientLoadBalace && servers.Count > 0)
+                {
+                    servers = servers.OrderBy(x => GetNextInt32()).ToList();
+                }
             }
             catch (Exception ex)
             { Cat.lastException = ex; }
@@ -137,6 +150,13 @@ namespace Org.Unidal.Cat.Configuration
             }
             else
                 return null;
+        }
+
+        private static int GetNextInt32()
+        {
+            byte[] randomInt = new byte[4];
+            rnd.Value.GetBytes(randomInt);
+            return Convert.ToInt32(randomInt[0]);
         }
     }
 }

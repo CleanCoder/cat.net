@@ -356,9 +356,6 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
                 else
                 {
                     ITransaction parent = _mStack.Peek();
-                    if (parent == null)
-                        throw new Exception("dddd");
-
                     AddTransactionChild(message, parent);
                 }
                 Tree.EstimatedByteSize += message.EstimateByteSize();
