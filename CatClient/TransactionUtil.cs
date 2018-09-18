@@ -24,7 +24,6 @@ namespace Org.Unidal.Cat
             catch (Exception ex)
             {
                 forkedTran?.SetStatus(ex);
-                return default(TResult);
                 throw;
             }
             finally

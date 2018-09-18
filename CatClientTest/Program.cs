@@ -10,10 +10,17 @@ using System.Linq;
 
 namespace CatClientTest
 {
+    public class Context
+    {
+        public int Value { get; set; } = -1000;
+    }
+
     public class Program
     {
+        static AsyncLocal<Context> asyncLocal = new AsyncLocal<Context>();
         static void Main()
         {
+            System.Threading.ThreadPool.SetMinThreads(5, 100);
             try
             {
                 SimpleTest().GetAwaiter().GetResult();
@@ -39,25 +46,33 @@ namespace CatClientTest
 
         private static async Task SimpleTest()
         {
-
-            Console.WriteLine("Start: " + DateTime.Now);
+            var startTime = DateTime.Now;
+            Console.WriteLine("Start: " + startTime);
             Console.WriteLine($"Top ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
             ITransaction newOrderTransaction = null;
 
             try
             {
                 newOrderTransaction = Cat.NewTransaction("SimpleTestAsync-3-" + DateTime.Now.Ticks, "NewTrainOrder");
-                newOrderTransaction.AddData("I am a detailed message");
-                newOrderTransaction.AddData("another message"); 
-                //Cat.LogEvent("TrainNo", "123456");
-                //Cat.LogError("MyException", new Exception("My Exception"));
+                asyncLocal.Value = new Context { Value = -8 };
 
-                var tasks = Enumerable.Range(1, 20).Select(async (i) => await InvokePaymentWrap(i));
+                newOrderTransaction.AddData("I am a detailed message");
+                newOrderTransaction.AddData("another message");
+
+                Cat.LogError("MyException", new Exception("My Exception"));
+
+                var tasks = Enumerable.Range(1, 10).Select(async (i) => {
+
+                    await InvokePaymentWrap(i).ConfigureAwait(false);
+                    });
 
                 await Task.WhenAll(tasks);
 
+                Console.WriteLine("//////////////////////////////");
+
                 for (int i = 100; i < 103; i++)
                     await InvokePayment(i);
+
 
                 newOrderTransaction.Status = CatConstants.SUCCESS;
             }
@@ -67,17 +82,20 @@ namespace CatClientTest
             }
             finally
             {
+                Console.WriteLine(newOrderTransaction.DurationInMillis);
                 newOrderTransaction.Complete();
                 Console.WriteLine("End: " + DateTime.Now);
+                Console.WriteLine($"Duration: {(DateTime.Now - startTime).TotalMilliseconds}");
             }
         }
 
         private static async Task InvokePaymentWrap(int i)
         {
             var forkedTran = Cat.NewForkedTransaction("remote", "InvokePaymentWrap");
+            asyncLocal.Value = new Context() { Value = i };
             try
             {
-                await InvokePayment(i);
+                await InvokePayment(i).ConfigureAwait(false);
 
                 forkedTran.Status = CatConstants.SUCCESS;
             }
@@ -96,13 +114,13 @@ namespace CatClientTest
             ITransaction paymentTransaction = null;
             try
             {
-                Console.WriteLine($"InvokePayment 1 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                Console.WriteLine($"{i} - InvokePayment 1 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}. AsyncLocal: {asyncLocal.Value.Value}");
                 paymentTransaction = Cat.NewTransaction("NewPayment" + i, "PaymentDetail");
                 paymentTransaction.Status = CatConstants.SUCCESS;
-                await Task.Delay(100);
-                Console.WriteLine($"InvokePayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                await Task.Delay(100).ConfigureAwait(false);
+                Console.WriteLine($"{i} - InvokePayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}. AsyncLocal: {asyncLocal.Value.Value}");
 
-                await InvokeInnerPayment(i);
+                await InvokeInnerPayment(i).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -119,11 +137,11 @@ namespace CatClientTest
             ITransaction paymentTransaction = null;
             try
             {
-                Console.WriteLine($"InnerPayment 1 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                Console.WriteLine($"{i} - InnerPayment 1 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}. AsyncLocal: {asyncLocal.Value.Value}");
                 paymentTransaction = Cat.NewTransaction("NewInnerPayment", "PaymentDetail-" + i);
                 paymentTransaction.Status = CatConstants.SUCCESS;
                 await Task.Delay(1000);
-                Console.WriteLine($"InnerPayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}");
+                Console.WriteLine($"{i} - InnerPayment 2 ThreadId: {System.Threading.Thread.CurrentThread.ManagedThreadId}. AsyncLocal: {asyncLocal.Value.Value}");
 
             }
             catch (Exception ex)
