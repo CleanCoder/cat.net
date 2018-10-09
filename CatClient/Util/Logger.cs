@@ -133,6 +133,7 @@ namespace Org.Unidal.Cat.Util
 
         private static bool isWritable(string filename)
         {
+#if NET40
             var permissionSet = new PermissionSet(PermissionState.None);
             var writePermission = new FileIOPermission(FileIOPermissionAccess.Write, filename);
             permissionSet.AddPermission(writePermission);
@@ -145,7 +146,9 @@ namespace Org.Unidal.Cat.Util
             {
                 return false;
             }
+#else
+            return false;
+#endif
         }
-
     }
 }

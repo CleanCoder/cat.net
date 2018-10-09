@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
+#if NET40
 using System.Management;
+#endif
 using System.Threading;
 using System.Text;
 using Org.Unidal.Cat.Util;
@@ -59,8 +61,10 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
 
                 processorCount = Environment.ProcessorCount;
 
+#if NET40
                 perfMetricProvider = new DefaultPerformanceMetricProvider();
                 perfMetricProvider.Initialize();
+#endif
             }
             catch (Exception ex) { Cat.lastException = ex; }
         }
@@ -419,6 +423,10 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
         /// <returns> 内存大小(单位M) </returns>
         private static long GetPhysicalMemory()
         {
+#if !NET40
+            return 0;
+#else
+
             ManagementObjectSearcher searcher = new ManagementObjectSearcher(); //用于查询一些如系统信息的管理对象 
             searcher.Query = new SelectQuery("Win32_PhysicalMemory ", "", new[] { "Capacity" }); //设置查询条件 
             ManagementObjectCollection collection = searcher.Get(); //获取内存容量 
@@ -459,6 +467,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
             }
 
             return capacity;
+#endif
         }
 
         private XmlElement createExtension(XmlDocument xml, string extensionId, params Pair<string, float>[] idAndValues)

@@ -3,15 +3,15 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.Remoting.Messaging;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Org.Unidal.Cat
 {
     public class DBUtil
     {
-        private const string SCOPED_CAT_TRANSACTION = "ScopedCatTran";
+        private static AsyncLocal<Message.ITransaction> _scopedTrans = new AsyncLocal<Message.ITransaction>();
         private static readonly ConcurrentDictionary<string, string> filePathDic = new ConcurrentDictionary<string, string>();
 
         public static TResult WrapWithCatTransaction<TResult>(Func<TResult> sqlFunc, string queryCatetroy, string operationType,
@@ -49,7 +49,7 @@ namespace Org.Unidal.Cat
                 {
                     catTran.Status = CatConstants.SUCCESS;
                     catTran.Complete();
-                    CallContext.FreeNamedDataSlot(SCOPED_CAT_TRANSACTION);
+                    _scopedTrans.Value = null;
                 }
             }
         }
@@ -89,7 +89,7 @@ namespace Org.Unidal.Cat
                 {
                     catTran.Status = CatConstants.SUCCESS;
                     catTran.Complete();
-                    CallContext.FreeNamedDataSlot(SCOPED_CAT_TRANSACTION);
+                    _scopedTrans.Value = null;
                 }
             }
         }
@@ -122,7 +122,7 @@ namespace Org.Unidal.Cat
                 {
                     catTran.Status = CatConstants.SUCCESS;
                     catTran.Complete();
-                    CallContext.FreeNamedDataSlot(SCOPED_CAT_TRANSACTION);
+                    _scopedTrans.Value = null;
                 }
             }
         }
@@ -156,7 +156,7 @@ namespace Org.Unidal.Cat
                 {
                     catTran.Status = CatConstants.SUCCESS;
                     catTran.Complete();
-                    CallContext.FreeNamedDataSlot(SCOPED_CAT_TRANSACTION);
+                    _scopedTrans.Value = null;
                 }
             }
         }
@@ -171,7 +171,7 @@ namespace Org.Unidal.Cat
             var currTrans = Cat.GetManager()?.PeekTransaction();
             if (currTrans == null)
             {
-                currTrans = CallContextHelper.GetFromCallContext<Message.ITransaction>(SCOPED_CAT_TRANSACTION);
+                currTrans = _scopedTrans.Value;
                 if (currTrans == null)
                     return;
             }
@@ -195,7 +195,7 @@ namespace Org.Unidal.Cat
 
         private static Message.IMessage StartSqlTransaction(string queryCatetroy, ref bool ownTrans)
         {
-            var currTrans = CallContextHelper.GetFromCallContext<Message.IMessage>(SCOPED_CAT_TRANSACTION);
+            var currTrans = _scopedTrans.Value;
             if (currTrans != null)
             {
                 ownTrans = false;
@@ -203,7 +203,7 @@ namespace Org.Unidal.Cat
             }
 
             currTrans = Cat.NewTransaction(CatConstants.EVENT_SQL, queryCatetroy);
-            CallContextHelper.SetToCallContext(SCOPED_CAT_TRANSACTION, currTrans);
+            _scopedTrans.Value = currTrans;
 
             return currTrans;
         }
@@ -221,55 +221,5 @@ namespace Org.Unidal.Cat
 
             return $"Caller={path}&Member={callerMemberName}&Line={callerLineNumber.ToString()}";
         }
-
-        #region [ Inner Classes... ]
-        internal static class CallContextHelper
-        {
-            public static T GetFromCallContext<T>(string key)
-            {
-                var result = CallContext.LogicalGetData(key) as Wrap<T>;
-                return result == null ? default(T) : result.Value;
-            }
-
-            public static void SetToCallContext<T>(string key, T value)
-            {
-                var result = CallContext.LogicalGetData(key) as Wrap<T>;
-                if (result == null)
-                {
-                    if (value != null)
-                    {
-                        CallContext.LogicalSetData(key, new Wrap<T>(value));
-                    }
-                }
-                else
-                {
-                    result.Value = value;
-                    if (value == null)
-                    {
-                        CallContext.LogicalSetData(key, null);
-                    }
-                }
-            }
-
-            private abstract class Wrap
-            {
-                public abstract void Clear();
-            }
-
-            private class Wrap<T> : Wrap
-            {
-                public T Value { get; set; }
-                public Wrap(T t)
-                {
-                    Value = t;
-                }
-
-                public override void Clear()
-                {
-                    Value = default(T);
-                }
-            }
-        }
-        #endregion
     }
 }

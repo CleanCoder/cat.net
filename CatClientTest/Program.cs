@@ -23,7 +23,9 @@ namespace CatClientTest
             System.Threading.ThreadPool.SetMinThreads(5, 100);
             try
             {
-                SimpleTest().GetAwaiter().GetResult();
+                // SimpleTest().GetAwaiter().GetResult();
+
+                Test99Line();
             }
             finally
             {
@@ -61,10 +63,11 @@ namespace CatClientTest
 
                 Cat.LogError("MyException", new Exception("My Exception"));
 
-                var tasks = Enumerable.Range(1, 10).Select(async (i) => {
+                var tasks = Enumerable.Range(1, 2).Select(async (i) =>
+                {
 
                     await InvokePaymentWrap(i).ConfigureAwait(false);
-                    });
+                });
 
                 await Task.WhenAll(tasks);
 
@@ -151,6 +154,50 @@ namespace CatClientTest
             finally
             {
                 paymentTransaction.Complete();
+            }
+        }
+
+        private static void Test99Line()
+        {
+            var name = DateTime.Now.ToLongTimeString();
+
+            ITransaction newOrderTransaction = null;
+
+            for (int i = 1; i <= 950; i++)
+            {
+                try
+                {
+                    newOrderTransaction = Cat.NewTransaction("Line99Test", name);
+                    newOrderTransaction.Status = CatConstants.SUCCESS;
+                    System.Threading.Thread.Sleep(1);
+                }
+                catch (Exception ex)
+                {
+                    newOrderTransaction.SetStatus(ex);
+                }
+                finally
+                {
+                    Console.WriteLine(i);
+                    newOrderTransaction.Complete();
+                }
+            }
+
+            for (int i = 951; i <= 1000; i++)
+            {
+                try
+                {
+                    newOrderTransaction = Cat.NewTransaction("Line99Test", name);
+                    System.Threading.Thread.Sleep((i-950)*10);
+                }
+                catch (Exception ex)
+                {
+                    newOrderTransaction.SetStatus(ex);
+                }
+                finally
+                {
+                    Console.WriteLine(i);
+                    newOrderTransaction.Complete();
+                }
             }
         }
     }

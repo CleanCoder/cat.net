@@ -23,8 +23,10 @@ namespace CatClientTest
             //float nPhysicalThreads = 0;
             //float nExceptions = 0;
 
+#if NET40
             IPerformanceMetricProvider provider = new DefaultPerformanceMetricProvider();
             provider.UpdateMetrics();
+#endif
 
             //Console.WriteLine("processor time: " + processorTime);
         }

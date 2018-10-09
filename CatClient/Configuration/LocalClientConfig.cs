@@ -74,6 +74,11 @@ namespace Org.Unidal.Cat.Configuration
             else
             {
                 var catConfig = Configuration.CatConfigurationSection.CatConfig;
+                if (catConfig == null)
+                {
+                    throw new Exception("Please initialize CAT Configuration via CatConfigurationSection::(IConfiguration config)");
+                }
+
                 this.Domain = new Domain() { Id = catConfig.Domain.Id.Trim(), Enabled = catConfig.Domain.Enabled, MaxMessageSize = catConfig.Domain.MaxMessageSize };
                 this.UseClientLoadBalace = catConfig.Domain.UseClientLoadBalance;
                 bool logEnable = catConfig.LogEnabled.Enabled;

@@ -204,9 +204,14 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
             catch (System.IO.FileNotFoundException)
             {
                 var stream = File.Open(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+#if NET40
                 MemoryMappedFileSecurity security = new MemoryMappedFileSecurity();
                 mmf = MemoryMappedFile.CreateFromFile(stream, mmfName, CatConstants.ID_MARK_FILE_SIZE,
                     MemoryMappedFileAccess.ReadWrite, security, HandleInheritability.Inheritable, false);
+#else
+                mmf = MemoryMappedFile.CreateFromFile(stream, mmfName, CatConstants.ID_MARK_FILE_SIZE,
+                   MemoryMappedFileAccess.ReadWrite, HandleInheritability.Inheritable, false);
+#endif
             }
             return mmf;
         }

@@ -7,6 +7,7 @@ using Org.Unidal.Cat.Util;
 
 namespace Org.Unidal.Cat.Message.Spi.Internals
 {
+#if NET40
     public class DefaultPerformanceMetricProvider : IPerformanceMetricProvider
     {
         protected Process currentProcess = Process.GetCurrentProcess();
@@ -252,4 +253,6 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
             return null;
         }
     }
+}
+#endif
 }
