@@ -23,7 +23,7 @@ namespace CatClientTest
             System.Threading.ThreadPool.SetMinThreads(5, 100);
             try
             {
-                // SimpleTest().GetAwaiter().GetResult();
+                SimpleTest().GetAwaiter().GetResult();
 
                 Test99Line();
             }
@@ -187,6 +187,7 @@ namespace CatClientTest
                 try
                 {
                     newOrderTransaction = Cat.NewTransaction("Line99Test", name);
+                    newOrderTransaction.Status = CatConstants.SUCCESS;
                     System.Threading.Thread.Sleep((i-950)*10);
                 }
                 catch (Exception ex)

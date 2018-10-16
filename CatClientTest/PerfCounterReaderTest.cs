@@ -23,7 +23,7 @@ namespace CatClientTest
             //float nPhysicalThreads = 0;
             //float nExceptions = 0;
 
-#if NET40
+#if NETFULL
             IPerformanceMetricProvider provider = new DefaultPerformanceMetricProvider();
             provider.UpdateMetrics();
 #endif

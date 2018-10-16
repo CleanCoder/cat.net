@@ -14,7 +14,7 @@ namespace CatStandardClientTest
             CatConfigurationSection.Load(config);
 
             SimpleTest();
-            //Test99Line();
+            Test99Line();
 
             Console.ReadLine();
         }

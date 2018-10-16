@@ -82,7 +82,7 @@ namespace Org.Unidal.Cat.Util
             // 穿过代理服务器取远程用户真实IP地址
             string ip = string.Empty;
 
-            #if NET40
+            #if NETFULL
             try
             {
                 ip = HttpContext.Current.Request.Headers["X-Forwarded-For"];

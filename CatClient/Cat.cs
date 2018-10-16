@@ -97,7 +97,7 @@ namespace Org.Unidal.Cat
 
                 DefaultMessageManager manager = new DefaultMessageManager();
 
-#if NET40
+#if NETFULL
                 var configFilePath = System.Configuration.ConfigurationManager.AppSettings[CatConstants.LOCAL_CLIENT_CONFIG];
 #else
                 var configFilePath = string.Empty;

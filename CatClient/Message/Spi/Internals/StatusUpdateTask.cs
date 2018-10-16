@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Globalization;
-#if NET40
+#if NETFULL
 using System.Management;
 #endif
 using System.Threading;
@@ -61,7 +61,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
 
                 processorCount = Environment.ProcessorCount;
 
-#if NET40
+#if NETFULL
                 perfMetricProvider = new DefaultPerformanceMetricProvider();
                 perfMetricProvider.Initialize();
 #endif
@@ -423,7 +423,7 @@ namespace Org.Unidal.Cat.Message.Spi.Internals
         /// <returns> 内存大小(单位M) </returns>
         private static long GetPhysicalMemory()
         {
-#if !NET40
+#if !NETFULL
             return 0;
 #else
 
